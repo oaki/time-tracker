@@ -5,6 +5,7 @@ import logo from "./images/inteles_logo.svg";
 import {LoginPage} from "./pages/loginPage";
 import {MainPage} from "./pages/mainPage";
 import {appReducer} from "./reducer";
+import {VERSION} from "./version";
 
 
 export const TOKEN_NAME = "jwt-inteles-token";
@@ -46,7 +47,7 @@ function App() {
         color: "#888",
         fontSize: "0.8rem",
         padding: "0 1rem 1rem 1rem"
-      }}>GPS Geo Localization version: 2.43.206
+      }}>GPS Geo Localization version: {VERSION}
       </div>
     </div>
   );

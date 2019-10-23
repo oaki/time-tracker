@@ -22,6 +22,6 @@
   "name": "Inteles - Time Tracker",
   "short_name": "Inteles",
   "lang": "en-GB",
-  "start_url": "/",
+  "start_url": "/build",
   "orientation": "portrait"
 }

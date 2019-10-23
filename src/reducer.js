@@ -5,6 +5,9 @@ export function reducer(state, action) {
     case "isLoading":
       return {...state, isLoading: action.payload};
 
+      case "image":
+      return {...state, image: action.payload};
+
     case "showSuccess":
       return {...state, showSuccess: action.payload};
 

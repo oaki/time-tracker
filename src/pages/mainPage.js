@@ -6,12 +6,13 @@ import {makeStyles} from "@material-ui/core/styles";
 import PlayArrow from "@material-ui/icons/PlayArrow";
 import SaveAlt from "@material-ui/icons/SaveAlt";
 import Stop from "@material-ui/icons/Stop";
-import React, {useReducer} from "react";
-import {save} from "../api";
+import CameraPhoto, {FACING_MODES} from "jslib-html5-camera-photo";
+import React, {useEffect, useReducer, useState} from "react";
+import {save, saveImage} from "../api";
 import {getUserToken} from "../App";
 import {useGeolocation} from "../hooks/useGeoLocation";
+import {useRefCallback} from "../hooks/useRefCallback";
 import {reducer} from "../reducer";
-
 
 const useStyles = makeStyles(theme => ({
   root: {
@@ -41,19 +42,37 @@ const useStyles = makeStyles(theme => ({
 
 const initialState = {
   isLoading: false,
-  showSuccess: false
+  showSuccess: false,
+  image: ""
 };
 
+let cameraPhotoInstance;
 
 async function handleStart(type, dispatch, geolocation) {
+
   dispatch({payload: "", type: "error"});
   dispatch({payload: true, type: "isLoading"});
   const userToken = getUserToken();
+
   try {
-    const res = await save({lat: geolocation.latitude, lng: geolocation.longitude, token: userToken, type});
+    const res = await save({
+      type,
+      lat: geolocation.latitude,
+      lng: geolocation.longitude,
+      token: userToken,
+    });
     if (!res) {
       dispatch({payload: "Nepodarilo sa zapisat. Skúste ešte raz alebo neskôr.", type: "error"});
     } else {
+
+      const config = {
+        sizeFactor: 1,
+        imageType: "jpg",
+        imageCompression: 0.95
+      };
+      let dataUri = cameraPhotoInstance.getDataUri(config);
+
+      saveImage({image: dataUri, userToken, logId: res.id});
       dispatch({payload: true, type: "showSuccess"});
     }
   } catch (err) {
@@ -73,6 +92,10 @@ let timer;
 export function MainPage() {
   const [state, dispatch] = useReducer(reducer, initialState);
   const classes = useStyles();
+  const [videoNode, setVideoNode] = useRefCallback();
+  const [isCameraStarted, setIsCameraStarted] = useState(false);
+  const [isCameraError, setIsCameraError] = useState(false);
+
   const geolocation = useGeolocation({
     enableHighAccuracy: true,
     maximumAge: 15,
@@ -87,6 +110,31 @@ export function MainPage() {
     }, 4000);
   }
 
+  useEffect(() => {
+    if (videoNode && !cameraPhotoInstance) {
+      cameraPhotoInstance = new CameraPhoto(videoNode);
+
+      cameraPhotoInstance.startCamera(FACING_MODES.USER)
+        .then((stream) => {
+          if (!isCameraStarted) {
+            setIsCameraStarted(true);
+            console.log("camera started");
+          }
+        })
+        .catch((error) => {
+          setIsCameraError(true);
+          console.log("error", error);
+        });
+    }
+
+    // return () => {
+    //   debugger;
+    //   if (cameraPhotoInstance) {
+    //      cameraPhotoInstance.stopCamera()
+    //   }
+    // }
+  }, [videoNode, cameraPhotoInstance]);
+
   if (geolocation.error && geolocation.error.message) {
     return (
       <div style={{color: "red"}}>{geolocation.error.message}</div>
@@ -95,34 +143,44 @@ export function MainPage() {
 
   return (
     <>
+      <video width={1} height={1} ref={setVideoNode} autoPlay={true}/>
+      {state.error && <div style={{color: "red"}}>{state.error}</div>}
+      {isCameraError && <div style={{color: "red"}}>Problém pri inicializácii kamery</div>}
+
       {state.showSuccess && (<div style={{color: "#1dc100"}}><SaveAlt/> Uložené</div>)}
 
-      <BtnContainer>
-        <Button
-          variant="contained"
-          color="primary"
-          size="large"
-          className={classes.root}
-          disabled={state.isLoading || state.showSuccess}
-          onClick={() => handleStart("arrival", dispatch, geolocation)}
-        >
-          <PlayArrow/>
-          Príchod
-        </Button>
-        {state.isLoading && <CircularProgress size={24} className={classes.buttonProgress}/>}
-      </BtnContainer>
+      {state.image && <img src={state.image} alt={"photo"}/>}
 
-      <BtnContainer>
-        <Button
-          className={classes.root}
-          disabled={state.isLoading || state.showSuccess}
-          onClick={() => handleStart("leave", dispatch, geolocation)}
-        >
-          <Stop/>
-          Odchod
-        </Button>
-        {state.isLoading && <CircularProgress size={24} className={classes.buttonProgress}/>}
-      </BtnContainer>
+      {!isCameraStarted && <CircularProgress style={{marginTop:'1rem',marginBottom:'1rem'}} size={24} className={classes.buttonProgress}/>}
+      {isCameraStarted && <div>
+        <BtnContainer>
+          <Button
+            variant="contained"
+            color="primary"
+            size="large"
+            className={classes.root}
+            disabled={state.isLoading || state.showSuccess}
+            onClick={() => handleStart("arrival", dispatch, geolocation)}
+          >
+            <PlayArrow/>
+            Príchod
+          </Button>
+          {state.isLoading && <CircularProgress size={24} className={classes.buttonProgress}/>}
+        </BtnContainer>
+
+        <BtnContainer>
+          <Button
+            className={classes.root}
+            disabled={state.isLoading || state.showSuccess}
+            onClick={() => handleStart("leave", dispatch, geolocation)}
+          >
+            <Stop/>
+            Odchod
+          </Button>
+          {state.isLoading && <CircularProgress size={24} className={classes.buttonProgress}/>}
+        </BtnContainer>
+      </div>
+      }
     </>
   )
 }
