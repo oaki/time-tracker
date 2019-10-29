@@ -9,21 +9,43 @@ export const useGeolocation = ({enableHighAccuracy, maximumAge, timeout} = {}, c
     heading: null,
     latitude: null,
     longitude: null,
-    speed: null,
-    timestamp: null,
-    error: null
+    speed: null
   });
+
   const [watchId, setWatchId] = useState(0);
+  const [error, setError] = useState(null);
+
   useEffect(() => {
 
     if (navigator.geolocation && !watchId) {
-      navigator.geolocation.getCurrentPosition(({coords}) => setState(coords), (err) => {
-        setState({...state, error: err});
+      navigator.geolocation.getCurrentPosition(({coords}) => {
+        setError(null);
+        setState({
+          accuracy: coords.accuracy,
+          altitude: coords.altitude,
+          altitudeAccuracy: coords.altitudeAccuracy,
+          heading: coords.heading,
+          latitude: coords.latitude,
+          longitude: coords.longitude,
+          speed: coords.speed
+        });
+      }, (err) => {
+        setError(err);
       });
-      const newWatchId = navigator.geolocation.watchPosition(
-        ({coords}) => setState(coords),
+      const newWatchId = navigator.geolocation.watchPosition(({coords}) => {
+          setError(null);
+          setState({
+            accuracy: coords.accuracy,
+            altitude: coords.altitude,
+            altitudeAccuracy: coords.altitudeAccuracy,
+            heading: coords.heading,
+            latitude: coords.latitude,
+            longitude: coords.longitude,
+            speed: coords.speed
+          });
+        },
         (err) => {
-          setState({...state, error: err});
+          setError(null);
         },
         {enableHighAccuracy, maximumAge, timeout}
       );
@@ -39,6 +61,6 @@ export const useGeolocation = ({enableHighAccuracy, maximumAge, timeout} = {}, c
     }
   }, []);
 
-  return state;
+  return [state, error];
 };
 

@@ -53,7 +53,7 @@ async function handleStart(type, dispatch, geolocation) {
   dispatch({payload: "", type: "error"});
   dispatch({payload: true, type: "isLoading"});
   const userToken = getUserToken();
-
+  console.log({geolocation});
   try {
     const res = await save({
       type,
@@ -94,9 +94,8 @@ export function MainPage() {
   const classes = useStyles();
   const [videoNode, setVideoNode] = useRefCallback();
   const [isCameraStarted, setIsCameraStarted] = useState(false);
-  const [isCameraError, setIsCameraError] = useState(false);
 
-  const geolocation = useGeolocation({
+  const [geolocation, geoError] = useGeolocation({
     enableHighAccuracy: true,
     maximumAge: 15,
     timeout: 12
@@ -122,22 +121,14 @@ export function MainPage() {
           }
         })
         .catch((error) => {
-          setIsCameraError(true);
           console.log("error", error);
         });
     }
-
-    // return () => {
-    //   debugger;
-    //   if (cameraPhotoInstance) {
-    //      cameraPhotoInstance.stopCamera()
-    //   }
-    // }
   }, [videoNode, cameraPhotoInstance]);
 
-  if (geolocation.error && geolocation.error.message) {
+  if (geoError && geoError.error.message) {
     return (
-      <div style={{color: "red"}}>{geolocation.error.message}</div>
+      <div style={{color: "red"}}>{geoError.error.message}</div>
     )
   }
 
@@ -145,42 +136,37 @@ export function MainPage() {
     <>
       <video width={1} height={1} ref={setVideoNode} autoPlay={true}/>
       {state.error && <div style={{color: "red"}}>{state.error}</div>}
-      {isCameraError && <div style={{color: "red"}}>Problém pri inicializácii kamery</div>}
 
       {state.showSuccess && (<div style={{color: "#1dc100"}}><SaveAlt/> Uložené</div>)}
 
       {state.image && <img src={state.image} alt={"photo"}/>}
 
-      {!isCameraStarted && <CircularProgress style={{marginTop:'1rem',marginBottom:'1rem'}} size={24} className={classes.buttonProgress}/>}
-      {isCameraStarted && <div>
-        <BtnContainer>
-          <Button
-            variant="contained"
-            color="primary"
-            size="large"
-            className={classes.root}
-            disabled={state.isLoading || state.showSuccess}
-            onClick={() => handleStart("arrival", dispatch, geolocation)}
-          >
-            <PlayArrow/>
-            Príchod
-          </Button>
-          {state.isLoading && <CircularProgress size={24} className={classes.buttonProgress}/>}
-        </BtnContainer>
+      <BtnContainer>
+        <Button
+          variant="contained"
+          color="primary"
+          size="large"
+          className={classes.root}
+          disabled={state.isLoading || state.showSuccess}
+          onClick={() => handleStart("arrival", dispatch, geolocation)}
+        >
+          <PlayArrow/>
+          Príchod
+        </Button>
+        {state.isLoading && <CircularProgress size={24} className={classes.buttonProgress}/>}
+      </BtnContainer>
 
-        <BtnContainer>
-          <Button
-            className={classes.root}
-            disabled={state.isLoading || state.showSuccess}
-            onClick={() => handleStart("leave", dispatch, geolocation)}
-          >
-            <Stop/>
-            Odchod
-          </Button>
-          {state.isLoading && <CircularProgress size={24} className={classes.buttonProgress}/>}
-        </BtnContainer>
-      </div>
-      }
+      <BtnContainer>
+        <Button
+          className={classes.root}
+          disabled={state.isLoading || state.showSuccess}
+          onClick={() => handleStart("leave", dispatch, geolocation)}
+        >
+          <Stop/>
+          Odchod
+        </Button>
+        {state.isLoading && <CircularProgress size={24} className={classes.buttonProgress}/>}
+      </BtnContainer>
     </>
   )
 }
