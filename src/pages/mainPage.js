@@ -6,6 +6,7 @@ import {makeStyles} from "@material-ui/core/styles";
 import PlayArrow from "@material-ui/icons/PlayArrow";
 import SaveAlt from "@material-ui/icons/SaveAlt";
 import Stop from "@material-ui/icons/Stop";
+import * as Sentry from "@sentry/browser";
 import CameraPhoto, {FACING_MODES} from "jslib-html5-camera-photo";
 import React, {useEffect, useReducer, useState} from "react";
 import {save, saveImage} from "../api";
@@ -47,6 +48,7 @@ const initialState = {
 };
 
 let cameraPhotoInstance;
+let tryToStart = false;
 
 async function handleStart(type, dispatch, geolocation) {
 
@@ -63,7 +65,7 @@ async function handleStart(type, dispatch, geolocation) {
     });
     if (!res) {
       dispatch({payload: "Nepodarilo sa zapisat. Skúste ešte raz alebo neskôr.", type: "error"});
-    } else {
+    } else if (tryToStart) {
 
       const config = {
         sizeFactor: 1,
@@ -110,19 +112,25 @@ export function MainPage() {
   }
 
   useEffect(() => {
-    if (videoNode && !cameraPhotoInstance) {
+    if (videoNode && !cameraPhotoInstance && !tryToStart) {
+      tryToStart = true;
       cameraPhotoInstance = new CameraPhoto(videoNode);
-
-      cameraPhotoInstance.startCamera(FACING_MODES.USER)
-        .then((stream) => {
-          if (!isCameraStarted) {
-            setIsCameraStarted(true);
-            console.log("camera started");
-          }
-        })
-        .catch((error) => {
-          console.log("error", error);
-        });
+      
+      if (cameraPhotoInstance) {
+        cameraPhotoInstance.startCamera(FACING_MODES.USER)
+          .then((stream) => {
+            if (!isCameraStarted) {
+              setIsCameraStarted(true);
+              console.log("camera started");
+            }
+          })
+          .catch((error) => {
+            console.log("error", error);
+            Sentry.captureException(error);
+          });
+      } else {
+        Sentry.captureException({msg: "User camera is not supported."});
+      }
     }
   }, [videoNode, cameraPhotoInstance]);
 

@@ -6,6 +6,8 @@ import {LoginPage} from "./pages/loginPage";
 import {MainPage} from "./pages/mainPage";
 import {appReducer} from "./reducer";
 import {VERSION} from "./version";
+import * as Sentry from '@sentry/browser';
+Sentry.init({ dsn: 'https://9df3887ac0ee42dba66059dade9b716f@sentry.io/1256606' });
 
 
 export const TOKEN_NAME = "jwt-inteles-token";
