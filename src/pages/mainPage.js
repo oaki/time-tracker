@@ -55,7 +55,7 @@ async function handleStart(type, dispatch, geolocation) {
   dispatch({payload: "", type: "error"});
   dispatch({payload: true, type: "isLoading"});
   const userToken = getUserToken();
-  console.log({geolocation});
+
   try {
     const res = await save({
       type,
@@ -134,7 +134,7 @@ export function MainPage() {
     }
   }, [videoNode, cameraPhotoInstance]);
 
-  if (geoError && geoError.error.message) {
+  if (geoError && geoError.error && geoError.error.message) {
     return (
       <div style={{color: "red"}}>{geoError.error.message}</div>
     )
